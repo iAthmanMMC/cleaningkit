@@ -19,6 +19,8 @@ if (getRversion() >= "2.15.1") {
     "interview_time_value",
     "label",
     "list_name",
+    "match_flag",
+    "matched_value",
     "name",
     "non_empty_count",
     "q_type",
