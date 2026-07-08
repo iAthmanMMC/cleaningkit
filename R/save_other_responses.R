@@ -261,8 +261,69 @@ prepare_other_responses <- function(
         character(1)
       )
 
-      # Split into codes and memoize label lookups over unique (list, code).
-      split_codes <- strsplit(raw_values, " ", fixed = TRUE)
+      # Split the stored value into choice codes. A naive space split breaks
+      # multi-word choice names (e.g. a name that IS "Waiting for transport")
+      # into single words. So: build the set of valid names per list from
+      # kobo_choices, take the fast path when every space-token is already a
+      # valid code, and otherwise greedily match the longest (most-words) known
+      # name from the vocabulary.
+      vocab_by_list <- if (
+        !is.null(kobo_choices) &&
+          all(c("list_name", "name") %in% names(kobo_choices))
+      ) {
+        split(
+          as.character(kobo_choices$name),
+          as.character(kobo_choices$list_name)
+        )
+      } else {
+        list()
+      }
+
+      split_selected <- function(value, ln) {
+        if (is.na(value) || !nzchar(trimws(value))) {
+          return(character(0))
+        }
+        toks <- strsplit(trimws(value), "\\s+")[[1]]
+        toks <- toks[nzchar(toks)]
+        if (length(toks) == 0) {
+          return(character(0))
+        }
+        vn <- if (!is.na(ln)) vocab_by_list[[ln]] else NULL
+        # fast path: proper single-token codes (unchanged behaviour)
+        if (is.null(vn) || length(vn) == 0 || all(toks %in% vn)) {
+          return(toks)
+        }
+        # greedy longest-match against known (possibly multi-word) names
+        vn_words <- strsplit(vn, "\\s+")
+        ord <- order(-lengths(vn_words))
+        vn <- vn[ord]
+        vn_words <- vn_words[ord]
+        out <- character(0)
+        i <- 1L
+        n <- length(toks)
+        while (i <= n) {
+          matched <- NA_character_
+          for (j in seq_along(vn)) {
+            w <- vn_words[[j]]
+            L <- length(w)
+            if (i + L - 1L <= n && identical(toks[i:(i + L - 1L)], w)) {
+              matched <- vn[j]
+              i <- i + L
+              break
+            }
+          }
+          if (is.na(matched)) {
+            out <- c(out, toks[i]) # unknown token: keep as-is
+            i <- i + 1L
+          } else {
+            out <- c(out, matched)
+          }
+        }
+        out
+      }
+
+      split_codes <- Map(split_selected, raw_values, list_for_row)
+      names(split_codes) <- NULL
       label_cache <- new.env(parent = emptyenv())
 
       pair_keys <- unique(unlist(
