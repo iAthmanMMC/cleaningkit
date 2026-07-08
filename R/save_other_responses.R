@@ -36,6 +36,21 @@
 #'   before processing. ONA exports place a label/description row immediately
 #'   after the header; if it is kept it is mistaken for a respondent and produces
 #'   one spurious "other" response (label text, bogus uuid) per question.
+#' @param label_language_fallback Logical. If \code{TRUE} (the default), when the
+#'   English label lookup for a selected \code{select_multiple} code returns
+#'   nothing, the first non-empty label column in \code{kobo_choices} (e.g. an
+#'   Arabic \code{label::Arabic (ar)} column) is used instead, so responses in
+#'   other languages are shown as they appear in the raw data rather than as
+#'   \code{NA}.
+#' @param fallback_to_code Logical. If \code{TRUE} (the default), a selected code
+#'   with no label in any language is displayed as the raw code itself, so no
+#'   \code{"NA"} is ever written into \code{selected_choices}.
+#' @param preferred_language Optional. The label language to prefer when resolving
+#'   \code{select_multiple} choice labels. May be an exact label column name (e.g.
+#'   \code{"label::Arabic (ar)"}) or a substring (e.g. \code{"Arabic"}). Passed to
+#'   \code{get_label_from_name()} and also used to order the fallback lookup. If
+#'   \code{NULL} (the default), the existing preference order is used (a bare
+#'   \code{label} column, else the first label column found).
 #' @return A dataframe formatted for \code{save_other_responses()}. It carries an
 #'   attribute \code{"ona_label_row_skipped"} recording whether the label row was
 #'   dropped, so \code{save_other_responses()} does not drop a row a second time.
@@ -47,7 +62,10 @@ prepare_other_responses <- function(
   raw_loops = NULL,
   extra_columns = NULL,
   uuid_column = "_uuid",
-  skip_label_row = TRUE
+  skip_label_row = TRUE,
+  label_language_fallback = TRUE,
+  fallback_to_code = TRUE,
+  preferred_language = NULL
 ) {
   # --- Drop the ONA label/description row (first row after the header) --------
   # Done first, before any pivot, so it is never treated as real survey data.
@@ -266,11 +284,84 @@ prepare_other_responses <- function(
       ))
       pair_keys <- pair_keys[!is.na(pair_keys)]
 
+      # Build a language fallback map from kobo_choices: for each
+      # (list_name, name) pair, the first non-empty label column value. Kobo
+      # label columns start with "label" (e.g. "label::English (en)",
+      # "label::Arabic (ar)"). When preferred_language is set, that column is put
+      # first so the fallback also prefers it; otherwise columns keep their order.
+      choice_fallback_map <- NULL
+      if (
+        isTRUE(label_language_fallback) &&
+          !is.null(kobo_choices) &&
+          all(c("list_name", "name") %in% names(kobo_choices)) &&
+          nrow(kobo_choices) > 0
+      ) {
+        label_cols <- grep(
+          "^label",
+          names(kobo_choices),
+          ignore.case = TRUE,
+          value = TRUE
+        )
+        if (!is.null(preferred_language) && length(label_cols) > 0) {
+          pref <- label_cols[
+            label_cols == preferred_language |
+              grepl(preferred_language, label_cols, ignore.case = TRUE)
+          ]
+          label_cols <- c(pref, setdiff(label_cols, pref))
+        }
+        if (length(label_cols) > 0) {
+          lab_mat <- as.matrix(kobo_choices[, label_cols, drop = FALSE])
+          first_nonempty <- apply(lab_mat, 1, function(vals) {
+            vals <- vals[!is.na(vals) & nzchar(trimws(vals))]
+            if (length(vals) == 0) NA_character_ else vals[[1]]
+          })
+          ck <- paste(
+            as.character(kobo_choices$list_name),
+            as.character(kobo_choices$name),
+            sep = "\u0001"
+          )
+          choice_fallback_map <- stats::setNames(
+            as.character(first_nonempty),
+            ck
+          )
+        }
+      }
+
+      # Resolve a code's label: preferred language first (via get_label_from_name),
+      # then any other language (via the fallback map), then the raw code
+      # (never NA when fallback_to_code = TRUE).
+      resolve_label <- function(list_name, code) {
+        lab <- tryCatch(
+          as.character(get_label_from_name(
+            list_name,
+            code,
+            kobo_choices,
+            label_column = preferred_language
+          ))[1],
+          error = function(e) NA_character_
+        )
+        if (!is.na(lab) && nzchar(lab) && !identical(lab, "NA")) {
+          return(lab)
+        }
+        if (!is.null(choice_fallback_map)) {
+          alt <- unname(
+            choice_fallback_map[paste(list_name, code, sep = "\u0001")]
+          )
+          if (!is.na(alt) && nzchar(alt)) {
+            return(alt)
+          }
+        }
+        if (isTRUE(fallback_to_code)) {
+          return(code)
+        }
+        NA_character_
+      }
+
       for (pk in pair_keys) {
         parts <- strsplit(pk, "\u0001", fixed = TRUE)[[1]]
         assign(
           pk,
-          as.character(get_label_from_name(parts[1], parts[2], kobo_choices)),
+          resolve_label(parts[1], parts[2]),
           envir = label_cache
         )
       }

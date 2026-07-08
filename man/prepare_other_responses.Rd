@@ -11,7 +11,10 @@ prepare_other_responses(
   raw_loops = NULL,
   extra_columns = NULL,
   uuid_column = "_uuid",
-  skip_label_row = TRUE
+  skip_label_row = TRUE,
+  label_language_fallback = TRUE,
+  fallback_to_code = TRUE,
+  preferred_language = NULL
 )
 }
 \arguments{
@@ -36,6 +39,24 @@ Default is NULL.}
 before processing. ONA exports place a label/description row immediately
 after the header; if it is kept it is mistaken for a respondent and produces
 one spurious "other" response (label text, bogus uuid) per question.}
+
+\item{label_language_fallback}{Logical. If \code{TRUE} (the default), when the
+English label lookup for a selected \code{select_multiple} code returns
+nothing, the first non-empty label column in \code{kobo_choices} (e.g. an
+Arabic \code{label::Arabic (ar)} column) is used instead, so responses in
+other languages are shown as they appear in the raw data rather than as
+\code{NA}.}
+
+\item{fallback_to_code}{Logical. If \code{TRUE} (the default), a selected code
+with no label in any language is displayed as the raw code itself, so no
+\code{"NA"} is ever written into \code{selected_choices}.}
+
+\item{preferred_language}{Optional. The label language to prefer when resolving
+\code{select_multiple} choice labels. May be an exact label column name (e.g.
+\code{"label::Arabic (ar)"}) or a substring (e.g. \code{"Arabic"}). Passed to
+\code{get_label_from_name()} and also used to order the fallback lookup. If
+\code{NULL} (the default), the existing preference order is used (a bare
+\code{label} column, else the first label column found).}
 }
 \value{
 A dataframe formatted for \code{save_other_responses()}. It carries an
