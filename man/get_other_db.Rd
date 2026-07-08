@@ -4,7 +4,12 @@
 \alias{get_other_db}
 \title{Get Other DB}
 \usage{
-get_other_db(kobo_survey, kobo_choices, other_labels)
+get_other_db(
+  kobo_survey,
+  kobo_choices,
+  other_labels,
+  preferred_language = NULL
+)
 }
 \arguments{
 \item{kobo_survey}{A dataframe representing the Kobo survey.}
@@ -12,6 +17,13 @@ get_other_db(kobo_survey, kobo_choices, other_labels)
 \item{kobo_choices}{A dataframe representing the Kobo choices.}
 
 \item{other_labels}{A dataframe retrieved from \code{get_other_labels}.}
+
+\item{preferred_language}{Optional label language to prefer for the available
+choice labels used to build the recoding dropdowns. May be an exact label
+column name or a substring (e.g. \code{"Arabic"}). Should match the value
+passed to \code{get_other_labels()} so question labels and choice labels are
+in the same language. If \code{NULL} (the default), a bare \code{label}
+column is preferred, else the first label column found.}
 }
 \value{
 A dataframe representing the mapping required for other responses database.

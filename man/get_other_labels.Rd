@@ -4,10 +4,16 @@
 \alias{get_other_labels}
 \title{Get Other Labels}
 \usage{
-get_other_labels(kobo_survey)
+get_other_labels(kobo_survey, preferred_language = NULL)
 }
 \arguments{
 \item{kobo_survey}{A dataframe containing the Kobo survey sheet.}
+
+\item{preferred_language}{Optional label language to prefer for the question
+\code{full_label}. May be an exact label column name (e.g.
+\code{"label::Arabic (ar)"}) or a substring (e.g. \code{"Arabic"}). If
+\code{NULL} (the default), a bare \code{label} column is preferred, else the
+first label column found; other languages fill any gaps.}
 }
 \value{
 A dataframe containing the corresponding other labels.
