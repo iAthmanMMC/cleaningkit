@@ -5,13 +5,13 @@
 \title{Get Other Labels}
 \usage{
 get_other_labels(
-  kobo_survey,
+  tool_survey,
   preferred_language = NULL,
   other_text_types = NULL
 )
 }
 \arguments{
-\item{kobo_survey}{A dataframe containing the Kobo survey sheet.}
+\item{tool_survey}{A dataframe containing the XLSForm survey sheet.}
 
 \item{preferred_language}{Optional label language to prefer for the question
 \code{full_label}. May be an exact label column name (e.g.
@@ -28,5 +28,5 @@ Pass the full question names as they appear in the survey, for example
 A dataframe containing the corresponding other labels.
 }
 \description{
-Retrieves text labels for questions in the kobo survey that correspond to "other" responses.
+Retrieves text labels for questions in the XLSForm survey sheet that correspond to "other" responses.
 }

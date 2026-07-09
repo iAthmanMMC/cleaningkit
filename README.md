@@ -24,7 +24,7 @@ validation checks:
 library(cleaningkit)
 
 # Load your raw data and Kobo survey schema
-raw_data <- read_raw_data("path/to/data.xlsx", kobo_survey = survey_sheet)
+raw_data <- read_raw_data("path/to/data.xlsx", tool_survey = survey_sheet)
 
 # 1. Check if the survey duration makes sense (e.g. between 15 and 60 minutes)
 checked_data <- validate_duration(raw_data, column_to_check = "_duration", lower_bound = 15, upper_bound = 60)

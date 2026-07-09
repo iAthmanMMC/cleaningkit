@@ -34,7 +34,7 @@
 #'
 #' @param dataset A dataframe or a list containing a dataframe named
 #'   \code{checked_dataset}.
-#' @param kobo_survey Kobo survey sheet dataframe. Must contain at least
+#' @param tool_survey XLSForm survey sheet dataframe. Must contain at least
 #'   \code{name} and \code{type} columns.
 #' @param uuid_column Name of the unique-identifier column. Default \code{"_uuid"}.
 #' @param enumerator_column Name of the enumerator column. Used to annotate the
@@ -67,10 +67,10 @@
 #' @export
 validate_duplicates <- function(
   dataset,
-  kobo_survey,
+  tool_survey,
   uuid_column = "_uuid",
   enumerator_column = "username",
-  idnk_value = "idnk",
+  idnk_value = "Don't know",
   sm_separator = "/",
   log_name = "soft_duplicate_log",
   threshold = 7,
@@ -106,8 +106,8 @@ validate_duplicates <- function(
     ))
     enumerator_column <- NULL
   }
-  if (!all(c("name", "type") %in% names(kobo_survey))) {
-    stop("'kobo_survey' must contain 'name' and 'type' columns.")
+  if (!all(c("name", "type") %in% names(tool_survey))) {
+    stop("'tool_survey' must contain 'name' and 'type' columns.")
   }
 
   # ---- drop label row ----
@@ -185,9 +185,9 @@ validate_duplicates <- function(
     "begin_repeat",
     "end_repeat"
   )
-  kobo_type_map <- stats::setNames(
-    as.character(kobo_survey$type),
-    as.character(kobo_survey$name)
+  type_map <- stats::setNames(
+    as.character(tool_survey$type),
+    as.character(tool_survey$name)
   )
 
   always_drop <- c(
@@ -202,7 +202,7 @@ validate_duplicates <- function(
       if (col %in% always_drop) {
         return(FALSE)
       }
-      typ <- kobo_type_map[col]
+      typ <- type_map[col]
       if (!is.na(typ) && typ %in% types_to_remove) {
         return(FALSE)
       }
@@ -232,65 +232,78 @@ validate_duplicates <- function(
     return(dataset)
   }
 
-  # ---- convert to lowercase character ----
+  # ---- convert to lowercase character; drop all-NA cols; replace NA -> "na" ----
   df_work <- as.data.frame(
     lapply(df_work, function(x) tolower(as.character(x))),
     stringsAsFactors = FALSE
   )
-
-  # ---- drop all-NA columns; replace remaining NA with "na" ----
   all_na <- vapply(df_work, function(x) all(is.na(x) | x == "na"), logical(1))
   df_work <- df_work[, !all_na, drop = FALSE]
   df_work[is.na(df_work)] <- "na"
 
+  # ---- Gower distance computed per enumerator ----
+  # Only surveys from the same enumerator are compared. Cross-enumerator
+  # similarity is irrelevant for fraud detection; we only care whether one
+  # enumerator is copying their own surveys.
   total_cols <- ncol(df_work)
 
-  # ---- convert to factor for Gower distance ----
-  df_work <- as.data.frame(
-    lapply(df_work, factor),
-    stringsAsFactors = TRUE
-  )
-  if (sum(is.na(df_work)) > 0) {
-    stop(
-      "NA values remain after conversion to factor; check the dataset for unexpected values."
-    )
+  # For enumerators with only one survey there is nothing to compare —
+  # we record NA so they can be excluded from the flagged set cleanly.
+  enumerator_groups <- if (!is.null(enum_vals)) {
+    enum_vals
+  } else {
+    rep("__all__", nrow(df_work))
   }
 
-  # ---- Gower distance ----
-  gower_dist <- cluster::daisy(
-    df_work,
-    metric = "gower",
-    warnBin = FALSE,
-    warnAsym = FALSE,
-    warnConst = FALSE
-  )
-  gower_mat <- as.matrix(gower_dist)
+  closest_dist <- rep(NA_real_, nrow(df_work))
+  closest_idx <- rep(NA_integer_, nrow(df_work))
 
-  # ---- for each survey: find closest *other* survey and number of differing cols ----
-  n <- nrow(df_work)
-  closest_dist <- numeric(n)
-  closest_idx <- integer(n)
+  for (grp in unique(enumerator_groups)) {
+    grp_rows <- which(enumerator_groups == grp)
+    if (length(grp_rows) < 2) {
+      next
+    } # only one survey for this enumerator
 
-  for (i in seq_len(n)) {
-    row_dists <- gower_mat[i, ]
-    row_dists[i] <- NA_real_ # exclude self
-    idx <- which.min(row_dists)
-    closest_idx[i] <- idx
-    closest_dist[i] <- row_dists[idx]
+    df_grp <- df_work[grp_rows, , drop = FALSE]
+
+    # drop columns that are constant within this enumerator's surveys
+    # (Gower handles them but warnConst suppresses the noise)
+    df_grp <- as.data.frame(
+      lapply(df_grp, function(x) factor(as.character(x))),
+      stringsAsFactors = TRUE
+    )
+
+    gower_mat <- as.matrix(cluster::daisy(
+      df_grp,
+      metric = "gower",
+      warnBin = FALSE,
+      warnAsym = FALSE,
+      warnConst = FALSE
+    ))
+
+    for (local_i in seq_along(grp_rows)) {
+      global_i <- grp_rows[local_i]
+      dists <- gower_mat[local_i, ]
+      dists[local_i] <- NA_real_ # exclude self
+      best_local <- which.min(dists)
+      closest_dist[global_i] <- dists[best_local]
+      closest_idx[global_i] <- grp_rows[best_local]
+    }
   }
 
   num_diff <- round(closest_dist * total_cols)
 
   # ---- build summary frame ----
+  # Surveys with no within-enumerator peer get NA num_diff and are excluded
+  # from flagging unless return_all_results = TRUE.
   summary_df <- data.frame(
     uuid = uuids,
     enumerator = if (!is.null(enum_vals)) enum_vals else NA_character_,
-    id_most_similar_survey = uuids[closest_idx],
-    enumerator_most_similar = if (!is.null(enum_vals)) {
-      enum_vals[closest_idx]
-    } else {
-      NA_character_
-    },
+    id_most_similar_survey = ifelse(
+      is.na(closest_idx),
+      NA_character_,
+      uuids[closest_idx]
+    ),
     num_cols_not_na = rowSums(df_work != "na"),
     total_columns_compared = total_cols,
     num_cols_idnk = rowSums(df_work == tolower(idnk_value)),
@@ -298,13 +311,20 @@ validate_duplicates <- function(
     stringsAsFactors = FALSE
   )
   summary_df <- summary_df[
-    order(summary_df$number_different_columns, summary_df$uuid),
+    order(
+      is.na(summary_df$number_different_columns),
+      summary_df$number_different_columns,
+      summary_df$uuid
+    ),
   ]
 
   flagged_df <- if (return_all_results) {
     summary_df
   } else {
-    summary_df[summary_df$number_different_columns <= threshold, ]
+    summary_df[
+      !is.na(summary_df$number_different_columns) &
+        summary_df$number_different_columns <= threshold,
+    ]
   }
 
   # ---- build log in validate_* shape ----
@@ -318,36 +338,67 @@ validate_duplicates <- function(
       stringsAsFactors = FALSE
     )
   } else {
-    issue_text <- ifelse(
-      flagged_df$number_different_columns <= threshold,
-      paste0(
-        "Possible duplicate: only ",
-        flagged_df$number_different_columns,
-        " of ",
-        flagged_df$total_columns_compared,
-        " columns differ from survey ",
-        flagged_df$id_most_similar_survey,
-        if (!is.null(enum_vals)) {
-          paste0(
-            " (enumerator: ",
-            flagged_df$enumerator,
-            "; similar survey enumerator: ",
-            flagged_df$enumerator_most_similar,
-            ")"
-          )
-        } else {
-          ""
-        },
-        " — threshold is ",
-        threshold
-      ),
-      paste0(
-        "Similar survey found (",
-        flagged_df$number_different_columns,
-        " differing columns from survey ",
-        flagged_df$id_most_similar_survey,
-        ")"
-      )
+    issue_text <- dplyr::case_when(
+      is.na(flagged_df$number_different_columns) ~
+        paste0(
+          "Only survey for enumerator",
+          if (!is.null(enum_vals)) {
+            paste0(" '", flagged_df$enumerator, "'")
+          } else {
+            ""
+          },
+          "; no within-enumerator peer to compare"
+        ),
+      flagged_df$number_different_columns <= threshold ~
+        paste0(
+          "Possible duplicate within enumerator",
+          if (!is.null(enum_vals)) {
+            paste0(" '", flagged_df$enumerator, "'")
+          } else {
+            ""
+          },
+          ": only ",
+          flagged_df$number_different_columns,
+          " of ",
+          flagged_df$total_columns_compared,
+          " columns differ from survey ",
+          flagged_df$id_most_similar_survey,
+          " \u2014 threshold is ",
+          threshold
+        ),
+      TRUE ~
+        paste0(
+          "Similar survey found within enumerator",
+          if (!is.null(enum_vals)) {
+            paste0(" '", flagged_df$enumerator, "'")
+          } else {
+            ""
+          },
+          " (",
+          flagged_df$number_different_columns,
+          " differing columns from survey ",
+          flagged_df$id_most_similar_survey,
+          ")"
+        )
+    )
+
+    binding <- dplyr::case_when(
+      is.na(flagged_df$id_most_similar_survey) ~
+        paste0("soft_duplicate ~/~ solo ~/~ ", flagged_df$uuid),
+      flagged_df$uuid < flagged_df$id_most_similar_survey ~
+        paste0(
+          "soft_duplicate ~/~ ",
+          flagged_df$uuid,
+          " ~/~ ",
+          flagged_df$id_most_similar_survey
+        ),
+      TRUE ~
+        paste0(
+          "soft_duplicate ~/~ ",
+          flagged_df$id_most_similar_survey,
+          " ~/~ ",
+          flagged_df$uuid
+        )
     )
 
     log <- data.frame(
@@ -357,14 +408,7 @@ validate_duplicates <- function(
       issue = issue_text,
       # Both surveys in a pair share the same binding (lexicographic min ~/~ max)
       # so they get the same colour in the review workbook.
-      check_binding = paste0(
-        "soft_duplicate ~/~ ",
-        ifelse(
-          flagged_df$uuid < flagged_df$id_most_similar_survey,
-          paste0(flagged_df$uuid, " ~/~ ", flagged_df$id_most_similar_survey),
-          paste0(flagged_df$id_most_similar_survey, " ~/~ ", flagged_df$uuid)
-        )
-      ),
+      check_binding = binding,
       stringsAsFactors = FALSE
     )
   }

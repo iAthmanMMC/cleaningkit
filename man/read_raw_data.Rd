@@ -6,7 +6,7 @@
 \usage{
 read_raw_data(
   filename,
-  kobo_survey,
+  tool_survey,
   extra_date_cols = NULL,
   extra_datetime_cols = NULL,
   sheet = 1,
@@ -16,7 +16,7 @@ read_raw_data(
 \arguments{
 \item{filename}{Path to the Excel file containing the raw data.}
 
-\item{kobo_survey}{A dataframe containing the Kobo survey sheet (used for
+\item{tool_survey}{A dataframe containing the XLSForm survey sheet (used for
 identifying date and numeric columns).}
 
 \item{extra_date_cols}{Optional character vector of additional date column
@@ -40,6 +40,6 @@ A dataframe with dates and datetimes converted, and numeric columns cast to nume
 }
 \description{
 Reads the main raw dataset from an Excel file, converts date and datetime
-columns based on the Kobo survey definition, and converts integer/decimal
+columns based on the XLSForm survey definition, and converts integer/decimal
 columns to numeric.
 }

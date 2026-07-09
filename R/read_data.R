@@ -1,11 +1,11 @@
 #' Read Raw Main Dataset
 #'
 #' Reads the main raw dataset from an Excel file, converts date and datetime
-#' columns based on the Kobo survey definition, and converts integer/decimal
+#' columns based on the XLSForm survey definition, and converts integer/decimal
 #' columns to numeric.
 #'
 #' @param filename Path to the Excel file containing the raw data.
-#' @param kobo_survey A dataframe containing the Kobo survey sheet (used for
+#' @param tool_survey A dataframe containing the XLSForm survey sheet (used for
 #'   identifying date and numeric columns).
 #' @param extra_date_cols Optional character vector of additional date column
 #'   names to convert (default is NULL). These are appended to the auto-detected
@@ -23,7 +23,7 @@
 #' @export
 read_raw_data <- function(
   filename,
-  kobo_survey,
+  tool_survey,
   extra_date_cols = NULL,
   extra_datetime_cols = NULL,
   sheet = 1,
@@ -49,11 +49,11 @@ read_raw_data <- function(
     cat(crayon::yellow("--> ONA label row set aside (will not be converted)\n"))
   }
 
-  # --- Auto-detect date and datetime columns from kobo_survey ---
+  # --- Auto-detect date and datetime columns from tool_survey ---
   cat(crayon::green("--> convert dates \n"))
   # Date columns: survey types "today" and "date"
   cols_date <- c(
-    kobo_survey$name[kobo_survey$type %in% c("today", "date")],
+    tool_survey$name[tool_survey$type %in% c("today", "date")],
     extra_date_cols
   )
   cols_date <- intersect(cols_date, colnames(df))
@@ -77,7 +77,7 @@ read_raw_data <- function(
   # --- Convert datetime columns ---
   # Datetime columns: survey types "start", "end", "datetime"
   cols_datetime <- c(
-    kobo_survey$name[kobo_survey$type %in% c("start", "end", "datetime")],
+    tool_survey$name[tool_survey$type %in% c("start", "end", "datetime")],
     "_submission_time",
     extra_datetime_cols
   )
@@ -101,7 +101,7 @@ read_raw_data <- function(
 
   # --- Convert numeric columns ---
   cat(crayon::green("--> convert integer columns to numeric \n"))
-  cols_numeric <- get_cols_numeric(kobo_survey)
+  cols_numeric <- get_cols_numeric(tool_survey)
   df <- df %>%
     mutate_at(intersect(cols_numeric, colnames(df)), as.numeric)
 

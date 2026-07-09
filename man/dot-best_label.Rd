@@ -2,12 +2,12 @@
 % Please edit documentation in R/other_db.R
 \name{.best_label}
 \alias{.best_label}
-\title{Best available label for each row of a Kobo sheet}
+\title{Best available label for each row of an XLSForm sheet}
 \usage{
 .best_label(df, preferred_language = NULL, fallback_to_name = TRUE)
 }
 \arguments{
-\item{df}{A Kobo survey or choices dataframe.}
+\item{df}{An XLSForm survey or choices dataframe.}
 
 \item{preferred_language}{Optional exact label column name (e.g.
 \code{"label::Arabic (ar)"}) or substring (e.g. \code{"Arabic"}).}

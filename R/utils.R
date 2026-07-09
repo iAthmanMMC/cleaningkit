@@ -1,9 +1,9 @@
 #' Extract Referenced Question Name from Relevance Expression
 #'
-#' Parses a Kobo relevance expression string to extract the referenced
+#' Parses a relevance expression string to extract the referenced
 #' question name enclosed in curly braces (e.g., \code{${question_name}}).
 #'
-#' @param x A string containing a Kobo relevance expression.
+#' @param x A string containing a relevance expression.
 #' @return The extracted question name, or \code{NA} if not found.
 #' @keywords internal
 get_ref_question <- function(x) {
@@ -35,28 +35,28 @@ get_value_from_uuid <- function(uuid, column, raw_data, raw_loop) {
 #' Get Choice Label from Choice Name
 #'
 #' Looks up the label for a given choice name within a specific list
-#' in the Kobo choices sheet.
+#' in the XLSForm choices sheet.
 #'
 #' @param list.name The \code{list_name} value to filter by.
 #' @param name The choice \code{name} value to look up.
-#' @param kobo_choices A dataframe containing the Kobo choices sheet.
+#' @param tool_choices A dataframe containing the XLSForm choices sheet.
 #' @return The label string for the matching choice.
 #' @keywords internal
-get_label_from_name <- function(list.name, name, kobo_choices) {
-  return(kobo_choices$label[
-    kobo_choices$list_name == list.name & kobo_choices$name == name
+get_label_from_name <- function(list.name, name, tool_choices) {
+  return(tool_choices$label[
+    tool_choices$list_name == list.name & tool_choices$name == name
   ])
 }
 
-#' Get Numeric Column Names from Kobo Survey
+#' Get Numeric Column Names from XLSForm Survey
 #'
 #' Extracts the names of columns that are integer or decimal types
-#' from the Kobo survey sheet.
+#' from the XLSForm survey sheet.
 #'
-#' @param kobo_survey A dataframe containing the Kobo survey sheet.
+#' @param tool_survey A dataframe containing the XLSForm survey sheet.
 #' @return A character vector of column names with numeric types.
-get_cols_numeric <- function(kobo_survey) {
-  kobo_survey %>%
+get_cols_numeric <- function(tool_survey) {
+  tool_survey %>%
     filter(type %in% c("integer", "decimal")) %>%
     pull(name)
 }
@@ -114,45 +114,45 @@ load_packages <- function() {
 #' Get Choice Name from Choice Label
 #'
 #' Looks up the name for a given choice label within a specific list
-#' in the Kobo choices sheet. Automatically looks up the choices sheet
+#' in the XLSForm choices sheet. Automatically looks up the choices sheet
 #' in the environment if not explicitly provided.
 #'
 #' @param list_name The \code{list_name} value to filter by.
 #' @param label The choice \code{label} value to look up.
-#' @param kobo_choices Optional dataframe containing the Kobo choices sheet.
-#'   If \code{NULL}, looks for \code{kobo_choices} in the environment.
+#' @param tool_choices Optional dataframe containing the XLSForm choices sheet.
+#'   If \code{NULL}, looks for \code{tool_choices} in the environment.
 #' @return The name string for the matching choice, or \code{NA} if not found.
 #' @export
-get_name_from_label <- function(list_name, label, kobo_choices = NULL) {
-  # Resolve kobo_choices dynamically if NULL
-  if (is.null(kobo_choices)) {
-    if (exists("kobo_choices", envir = parent.frame())) {
-      kobo_choices <- get("kobo_choices", envir = parent.frame())
-    } else if (exists("kobo_choices", envir = .GlobalEnv)) {
-      kobo_choices <- get("kobo_choices", envir = .GlobalEnv)
+get_name_from_label <- function(list_name, label, tool_choices = NULL) {
+  # Resolve tool_choices dynamically if NULL
+  if (is.null(tool_choices)) {
+    if (exists("tool_choices", envir = parent.frame())) {
+      tool_choices <- get("tool_choices", envir = parent.frame())
+    } else if (exists("tool_choices", envir = .GlobalEnv)) {
+      tool_choices <- get("tool_choices", envir = .GlobalEnv)
     } else {
       stop(
-        "kobo_choices dataframe is not provided and was not found in the environment."
+        "tool_choices dataframe is not provided and was not found in the environment."
       )
     }
   }
 
   if (
-    !is.data.frame(kobo_choices) ||
-      !all(c("list_name", "label", "name") %in% colnames(kobo_choices))
+    !is.data.frame(tool_choices) ||
+      !all(c("list_name", "label", "name") %in% colnames(tool_choices))
   ) {
     stop(
-      "kobo_choices must be a dataframe containing 'list_name', 'label', and 'name' columns."
+      "tool_choices must be a dataframe containing 'list_name', 'label', and 'name' columns."
     )
   }
 
   match_idx <- which(
-    kobo_choices$list_name == list_name & kobo_choices$label == label
+    tool_choices$list_name == list_name & tool_choices$label == label
   )
   if (length(match_idx) == 0) {
     return(NA_character_)
   }
-  return(kobo_choices$name[match_idx[1]])
+  return(tool_choices$name[match_idx[1]])
 }
 
 ################################################################################
@@ -160,45 +160,45 @@ get_name_from_label <- function(list_name, label, kobo_choices = NULL) {
 #' Get Choice Label from Choice Name
 #'
 #' Looks up the label for a given choice name within a specific list
-#' in the Kobo choices sheet. Automatically looks up the choices sheet
+#' in the XLSForm choices sheet. Automatically looks up the choices sheet
 #' in the environment if not explicitly provided.
 #'
 #' @param list.name The \code{list_name} value to filter by.
 #' @param name The choice \code{name} value to look up.
-#' @param kobo_choices Optional dataframe containing the Kobo choices sheet.
-#'   If \code{NULL}, looks for \code{kobo_choices} in the environment.
+#' @param tool_choices Optional dataframe containing the XLSForm choices sheet.
+#'   If \code{NULL}, looks for \code{tool_choices} in the environment.
 #' @return The label string for the matching choice, or \code{NA} if not found.
 #' @export
-get_label_from_name <- function(list.name, name, kobo_choices = NULL) {
-  # Resolve kobo_choices dynamically if NULL
-  if (is.null(kobo_choices)) {
-    if (exists("kobo_choices", envir = parent.frame())) {
-      kobo_choices <- get("kobo_choices", envir = parent.frame())
-    } else if (exists("kobo_choices", envir = .GlobalEnv)) {
-      kobo_choices <- get("kobo_choices", envir = .GlobalEnv)
+get_label_from_name <- function(list.name, name, tool_choices = NULL) {
+  # Resolve tool_choices dynamically if NULL
+  if (is.null(tool_choices)) {
+    if (exists("tool_choices", envir = parent.frame())) {
+      tool_choices <- get("tool_choices", envir = parent.frame())
+    } else if (exists("tool_choices", envir = .GlobalEnv)) {
+      tool_choices <- get("tool_choices", envir = .GlobalEnv)
     } else {
       stop(
-        "kobo_choices dataframe is not provided and was not found in the environment."
+        "tool_choices dataframe is not provided and was not found in the environment."
       )
     }
   }
 
   if (
-    !is.data.frame(kobo_choices) ||
-      !all(c("list_name", "label", "name") %in% colnames(kobo_choices))
+    !is.data.frame(tool_choices) ||
+      !all(c("list_name", "label", "name") %in% colnames(tool_choices))
   ) {
     stop(
-      "kobo_choices must be a dataframe containing 'list_name', 'label', and 'name' columns."
+      "tool_choices must be a dataframe containing 'list_name', 'label', and 'name' columns."
     )
   }
 
   match_idx <- which(
-    kobo_choices$list_name == list.name & kobo_choices$name == name
+    tool_choices$list_name == list.name & tool_choices$name == name
   )
   if (length(match_idx) == 0) {
     return(NA_character_)
   }
-  return(kobo_choices$label[match_idx[1]])
+  return(tool_choices$label[match_idx[1]])
 }
 
 ################################################################################
@@ -425,11 +425,11 @@ remove_choice <- function(concat_value, choice) {
 
 #' Extract Referenced Question Name from Relevance Expression
 #'
-#' Parses a Kobo relevance expression string to extract the referenced
+#' Parses a relevance expression string to extract the referenced
 #' question name enclosed in curly braces (e.g., \code{${question_name}}).
 #' This function is fully vectorized.
 #'
-#' @param x A character vector containing Kobo relevance expressions.
+#' @param x A character vector containing relevance expressions.
 #' @return A character vector of the extracted question names, or \code{NA} if not found.
 #' @export
 get_ref_question <- function(x) {
@@ -441,16 +441,16 @@ get_ref_question <- function(x) {
 
 ################################################################################
 
-#' Apply Kobo Labels
+#' Apply Tool Labels
 #'
-#' Renames the analysis output options columns using a Kobo choices dictionary before a user can save the analysis.
+#' Renames the analysis output options columns using an XLSForm tool choices dictionary before a user can save the analysis.
 #'
 #' @param dataset The dataset to modify
 #' @param column_name The name of the column to relabel
-#' @param kobo_choices The choices dictionary from Kobo
+#' @param tool_choices The XLSForm choices sheet dataframe
 #' @return The updated dataset
 #' @export
-apply_kobo_labels <- function(dataset, column_name, kobo_choices) {
+apply_tool_labels <- function(dataset, column_name, tool_choices) {
   # 1. Check if the column actually exists in the dataset
   if (!column_name %in% colnames(dataset)) {
     stop(paste(
@@ -461,7 +461,7 @@ apply_kobo_labels <- function(dataset, column_name, kobo_choices) {
   }
 
   # 2. Create the dictionary from the choices sheet
-  label_lookup <- kobo_choices %>%
+  label_lookup <- tool_choices %>%
     select(name, label) %>%
     mutate(
       name = as.character(name),

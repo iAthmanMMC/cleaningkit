@@ -1,4 +1,4 @@
-#' Best available label for each row of a Kobo sheet
+#' Best available label for each row of an XLSForm sheet
 #'
 #' Row-wise label resolver shared by \code{get_other_labels()} and
 #' \code{get_other_db()}. Detects a bare \code{label} column and any
@@ -8,7 +8,7 @@
 #' language it falls back to the \code{name} column (if present) so nothing
 #' resolves to \code{NA}.
 #'
-#' @param df A Kobo survey or choices dataframe.
+#' @param df An XLSForm survey or choices dataframe.
 #' @param preferred_language Optional exact label column name (e.g.
 #'   \code{"label::Arabic (ar)"}) or substring (e.g. \code{"Arabic"}).
 #' @param fallback_to_name Logical; if \code{TRUE} (default) unresolved rows use
@@ -64,9 +64,9 @@
 
 #' Get Other Labels
 #'
-#' Retrieves text labels for questions in the kobo survey that correspond to "other" responses.
+#' Retrieves text labels for questions in the XLSForm survey sheet that correspond to "other" responses.
 #'
-#' @param kobo_survey A dataframe containing the Kobo survey sheet.
+#' @param tool_survey A dataframe containing the XLSForm survey sheet.
 #' @param preferred_language Optional label language to prefer for the question
 #'   \code{full_label}. May be an exact label column name (e.g.
 #'   \code{"label::Arabic (ar)"}) or a substring (e.g. \code{"Arabic"}). If
@@ -78,16 +78,16 @@
 #'   \code{c("Q31_2", "Q45_3")}. Defaults to \code{NULL} (no extra text types).
 #' @return A dataframe containing the corresponding other labels.
 #' @export
-get_other_labels <- function(kobo_survey, preferred_language = NULL,
+get_other_labels <- function(tool_survey, preferred_language = NULL,
                              other_text_types = NULL) {
   # Language-aware question labels: name -> best available full_label.
   survey_labels <- data.frame(
-    ref_question = as.character(kobo_survey$name),
-    full_label = .best_label(kobo_survey, preferred_language),
+    ref_question = as.character(tool_survey$name),
+    full_label = .best_label(tool_survey, preferred_language),
     stringsAsFactors = FALSE
   )
 
-  other_labels <- kobo_survey %>%
+  other_labels <- tool_survey %>%
     filter(type == "text" & (str_detect(name, "_1$") | name %in% other_text_types)) %>%
     mutate(
       ref_question = as.character(lapply(relevant, get_ref_question))
@@ -116,8 +116,8 @@ get_other_labels <- function(kobo_survey, preferred_language = NULL,
 #'
 #' Processes the 'other_labels' alongside the survey inputs to map out the available choices for recoding.
 #'
-#' @param kobo_survey A dataframe representing the Kobo survey.
-#' @param kobo_choices A dataframe representing the Kobo choices.
+#' @param tool_survey A dataframe representing the XLSForm survey sheet.
+#' @param tool_choices A dataframe representing the XLSForm choices sheet.
 #' @param other_labels A dataframe retrieved from `get_other_labels`.
 #' @param preferred_language Optional label language to prefer for the available
 #'   choice labels used to build the recoding dropdowns. May be an exact label
@@ -128,18 +128,18 @@ get_other_labels <- function(kobo_survey, preferred_language = NULL,
 #' @return A dataframe representing the mapping required for other responses database.
 #' @export
 get_other_db <- function(
-  kobo_survey,
-  kobo_choices,
+  tool_survey,
+  tool_choices,
   other_labels,
   preferred_language = NULL
 ) {
   # generate other_db
   other_db <- other_labels %>%
     left_join(
-      select(kobo_survey, name, q_type, list_name),
+      select(tool_survey, name, q_type, list_name),
       by = c("ref_question" = "name")
     ) %>%
-    left_join(select(kobo_survey, name, relevant), by = "name") %>%
+    left_join(select(tool_survey, name, relevant), by = "name") %>%
     mutate(
       option_other = str_replace_all(
         str_extract(relevant, "\'.*\'"),
@@ -150,14 +150,14 @@ get_other_db <- function(
     select(-relevant)
 
   # remove all of option_other from choices
-  kobo_choices_sub <- filter(
-    kobo_choices,
+  tool_choices_sub <- filter(
+    tool_choices,
     list_name %in% other_db$list_name
   )
 
   for (r in seq_len(nrow(other_db))) {
     if (!is.na(other_db$option_other[r])) {
-      kobo_choices_sub <- kobo_choices_sub %>%
+      tool_choices_sub <- tool_choices_sub %>%
         filter(
           !(list_name == other_db$list_name[r] &
             name == other_db$option_other[r])
@@ -167,15 +167,15 @@ get_other_db <- function(
 
   # Resolve choice labels in the preferred language (fallback across languages,
   # then the choice name), so the recoding dropdowns are not English-only / NA.
-  kobo_choices_sub$resolved_label <- .best_label(
-    kobo_choices_sub,
+  tool_choices_sub$resolved_label <- .best_label(
+    tool_choices_sub,
     preferred_language
   )
 
   # add list of available choices
   other_db <- other_db %>%
     left_join(
-      kobo_choices_sub %>%
+      tool_choices_sub %>%
         group_by(list_name) %>%
         summarise(
           num_choices = n(),
