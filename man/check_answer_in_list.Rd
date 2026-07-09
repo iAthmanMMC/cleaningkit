@@ -7,9 +7,9 @@
 check_answer_in_list(questions, choices, constraint)
 }
 \arguments{
-\item{questions}{A dataframe containing the Kobo survey sheet.}
+\item{questions}{A dataframe containing the XLSForm survey sheet.}
 
-\item{choices}{A dataframe containing the Kobo choices sheet.}
+\item{choices}{A dataframe containing the XLSForm choices sheet.}
 
 \item{constraint}{A string containing a single constraint expression.}
 }

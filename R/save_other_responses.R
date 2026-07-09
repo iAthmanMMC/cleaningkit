@@ -23,7 +23,7 @@
 #'
 #' @param raw_data Main raw dataset dataframe (always required).
 #' @param other_db Dataframe from \code{get_other_db()} with question metadata.
-#' @param kobo_choices Dataframe of Kobo choices sheet.
+#' @param tool_choices Dataframe of XLSForm choices sheet.
 #' @param raw_loops Optional list of loop/roster dataframes (default is NULL).
 #'   Pass as a named or unnamed list, e.g.,
 #'   \code{list(household_roster = df1, children = df2)} or \code{list(df1, df2)}.
@@ -38,7 +38,7 @@
 #'   one spurious "other" response (label text, bogus uuid) per question.
 #' @param label_language_fallback Logical. If \code{TRUE} (the default), when the
 #'   English label lookup for a selected \code{select_multiple} code returns
-#'   nothing, the first non-empty label column in \code{kobo_choices} (e.g. an
+#'   nothing, the first non-empty label column in \code{tool_choices} (e.g. an
 #'   Arabic \code{label::Arabic (ar)} column) is used instead, so responses in
 #'   other languages are shown as they appear in the raw data rather than as
 #'   \code{NA}.
@@ -63,7 +63,7 @@
 prepare_other_responses <- function(
   raw_data,
   other_db,
-  kobo_choices,
+  tool_choices,
   raw_loops = NULL,
   extra_columns = NULL,
   uuid_column = "_uuid",
@@ -285,16 +285,16 @@ prepare_other_responses <- function(
       # into single words. Instead we segment the value against a known
       # vocabulary:
       #   * fast path - if every space-token is a valid short code (from
-      #     kobo_choices$name for this list), use the tokens as-is;
+      #     tool_choices$name for this list), use the tokens as-is;
       #   * otherwise - greedily match the longest known label phrase from
       #     other_db$choices (the ";;"-separated labels), case-insensitively.
       # Tokens that match nothing are kept as-is (e.g. an "other" code, which the
       # downstream resolver then turns into its label).
-      vocab_by_list <- if (!is.null(kobo_choices) &&
-        all(c("list_name", "name") %in% names(kobo_choices))) {
+      vocab_by_list <- if (!is.null(tool_choices) &&
+        all(c("list_name", "name") %in% names(tool_choices))) {
         split(
-          as.character(kobo_choices$name),
-          as.character(kobo_choices$list_name)
+          as.character(tool_choices$name),
+          as.character(tool_choices$list_name)
         )
       } else {
         list()
@@ -393,18 +393,18 @@ prepare_other_responses <- function(
       ))
       pair_keys <- pair_keys[!is.na(pair_keys)]
 
-      # Build a language fallback map from kobo_choices: for each
-      # (list_name, name) pair, the first non-empty label column value. Kobo
+      # Build a language fallback map from tool_choices: for each
+      # (list_name, name) pair, the first non-empty label column value. XLSForm tools like Kobo/ONA
       # label columns start with "label" (e.g. "label::English (en)",
       # "label::Arabic (ar)"). When preferred_language is set, that column is put
       # first so the fallback also prefers it; otherwise columns keep their order.
       choice_fallback_map <- NULL
       if (isTRUE(label_language_fallback) &&
-        !is.null(kobo_choices) &&
-        all(c("list_name", "name") %in% names(kobo_choices)) &&
-        nrow(kobo_choices) > 0) {
+        !is.null(tool_choices) &&
+        all(c("list_name", "name") %in% names(tool_choices)) &&
+        nrow(tool_choices) > 0) {
         label_cols <- grep(
-          "^label", names(kobo_choices),
+          "^label", names(tool_choices),
           ignore.case = TRUE, value = TRUE
         )
         if (!is.null(preferred_language) && length(label_cols) > 0) {
@@ -415,14 +415,14 @@ prepare_other_responses <- function(
           label_cols <- c(pref, setdiff(label_cols, pref))
         }
         if (length(label_cols) > 0) {
-          lab_mat <- as.matrix(kobo_choices[, label_cols, drop = FALSE])
+          lab_mat <- as.matrix(tool_choices[, label_cols, drop = FALSE])
           first_nonempty <- apply(lab_mat, 1, function(vals) {
             vals <- vals[!is.na(vals) & nzchar(trimws(vals))]
             if (length(vals) == 0) NA_character_ else vals[[1]]
           })
           ck <- paste(
-            as.character(kobo_choices$list_name),
-            as.character(kobo_choices$name),
+            as.character(tool_choices$list_name),
+            as.character(tool_choices$name),
             sep = "\u0001"
           )
           choice_fallback_map <- stats::setNames(
@@ -437,7 +437,7 @@ prepare_other_responses <- function(
       resolve_label <- function(list_name, code) {
         lab <- tryCatch(
           as.character(get_label_from_name(
-            list_name, code, kobo_choices,
+            list_name, code, tool_choices,
             label_column = preferred_language
           ))[1],
           error = function(e) NA_character_

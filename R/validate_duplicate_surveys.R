@@ -34,7 +34,7 @@
 #'
 #' @param dataset A dataframe or a list containing a dataframe named
 #'   \code{checked_dataset}.
-#' @param kobo_survey Kobo survey sheet dataframe. Must contain at least
+#' @param tool_survey XLSForm survey sheet dataframe. Must contain at least
 #'   \code{name} and \code{type} columns.
 #' @param uuid_column Name of the unique-identifier column. Default \code{"_uuid"}.
 #' @param enumerator_column Name of the enumerator column. Used to annotate the
@@ -67,7 +67,7 @@
 #' @export
 validate_duplicates <- function(
   dataset,
-  kobo_survey,
+  tool_survey,
   uuid_column = "_uuid",
   enumerator_column = "username",
   idnk_value = "Don't know",
@@ -106,8 +106,8 @@ validate_duplicates <- function(
     ))
     enumerator_column <- NULL
   }
-  if (!all(c("name", "type") %in% names(kobo_survey))) {
-    stop("'kobo_survey' must contain 'name' and 'type' columns.")
+  if (!all(c("name", "type") %in% names(tool_survey))) {
+    stop("'tool_survey' must contain 'name' and 'type' columns.")
   }
 
   # ---- drop label row ----
@@ -185,9 +185,9 @@ validate_duplicates <- function(
     "begin_repeat",
     "end_repeat"
   )
-  kobo_type_map <- stats::setNames(
-    as.character(kobo_survey$type),
-    as.character(kobo_survey$name)
+  type_map <- stats::setNames(
+    as.character(tool_survey$type),
+    as.character(tool_survey$name)
   )
 
   always_drop <- c(
@@ -202,7 +202,7 @@ validate_duplicates <- function(
       if (col %in% always_drop) {
         return(FALSE)
       }
-      typ <- kobo_type_map[col]
+      typ <- type_map[col]
       if (!is.na(typ) && typ %in% types_to_remove) {
         return(FALSE)
       }

@@ -2,21 +2,21 @@
 % Please edit documentation in R/check_kobo.R
 \name{check_constraints}
 \alias{check_constraints}
-\title{Check Kobo Survey Constraints}
+\title{Check XLSForm Survey Constraints}
 \usage{
 check_constraints(questions, choices)
 }
 \arguments{
-\item{questions}{A dataframe containing the Kobo survey sheet.}
+\item{questions}{A dataframe containing the XLSForm survey sheet.}
 
-\item{choices}{A dataframe containing the Kobo choices sheet.}
+\item{choices}{A dataframe containing the XLSForm choices sheet.}
 }
 \value{
 A character vector of invalid constraint expressions, or
 \code{NULL} if all constraints are valid.
 }
 \description{
-Scans the relevant column of a Kobo survey sheet for all
+Scans the relevant column of an XLSForm survey sheet for all
 \code{selected()} constraint expressions and validates that each
 referenced answer exists in the choices sheet. Returns a character
 vector of invalid constraints, if any.

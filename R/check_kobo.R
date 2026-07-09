@@ -4,8 +4,8 @@
 #' \code{selected(${question_name}, 'answer')} by checking whether the
 #' answer value exists in the corresponding choices list.
 #'
-#' @param questions A dataframe containing the Kobo survey sheet.
-#' @param choices A dataframe containing the Kobo choices sheet.
+#' @param questions A dataframe containing the XLSForm survey sheet.
+#' @param choices A dataframe containing the XLSForm choices sheet.
 #' @param constraint A string containing a single constraint expression.
 #' @return \code{TRUE} if the answer is valid or the constraint is not
 #'   a selected() type, \code{FALSE} otherwise.
@@ -45,15 +45,15 @@ check_answer_in_list <- function(questions, choices, constraint) {
   }
 }
 
-#' Check Kobo Survey Constraints
+#' Check XLSForm Survey Constraints
 #'
-#' Scans the relevant column of a Kobo survey sheet for all
+#' Scans the relevant column of an XLSForm survey sheet for all
 #' \code{selected()} constraint expressions and validates that each
 #' referenced answer exists in the choices sheet. Returns a character
 #' vector of invalid constraints, if any.
 #'
-#' @param questions A dataframe containing the Kobo survey sheet.
-#' @param choices A dataframe containing the Kobo choices sheet.
+#' @param questions A dataframe containing the XLSForm survey sheet.
+#' @param choices A dataframe containing the XLSForm choices sheet.
 #' @return A character vector of invalid constraint expressions, or
 #'   \code{NULL} if all constraints are valid.
 #' @export

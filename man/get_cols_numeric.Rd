@@ -2,17 +2,17 @@
 % Please edit documentation in R/utils.R
 \name{get_cols_numeric}
 \alias{get_cols_numeric}
-\title{Get Numeric Column Names from Kobo Survey}
+\title{Get Numeric Column Names from XLSForm Survey}
 \usage{
-get_cols_numeric(kobo_survey)
+get_cols_numeric(tool_survey)
 }
 \arguments{
-\item{kobo_survey}{A dataframe containing the Kobo survey sheet.}
+\item{tool_survey}{A dataframe containing the XLSForm survey sheet.}
 }
 \value{
 A character vector of column names with numeric types.
 }
 \description{
 Extracts the names of columns that are integer or decimal types
-from the Kobo survey sheet.
+from the XLSForm survey sheet.
 }

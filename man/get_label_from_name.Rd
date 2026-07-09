@@ -4,17 +4,17 @@
 \alias{get_label_from_name}
 \title{Get Choice Label from Choice Name}
 \usage{
-get_label_from_name(list.name, name, kobo_choices = NULL)
+get_label_from_name(list.name, name, tool_choices = NULL)
 
-get_label_from_name(list.name, name, kobo_choices = NULL)
+get_label_from_name(list.name, name, tool_choices = NULL)
 }
 \arguments{
 \item{list.name}{The \code{list_name} value to filter by.}
 
 \item{name}{The choice \code{name} value to look up.}
 
-\item{kobo_choices}{Optional dataframe containing the Kobo choices sheet.
-If \code{NULL}, looks for \code{kobo_choices} in the environment.}
+\item{tool_choices}{Optional dataframe containing the XLSForm choices sheet.
+If \code{NULL}, looks for \code{tool_choices} in the environment.}
 }
 \value{
 The label string for the matching choice.
@@ -23,10 +23,10 @@ The label string for the matching choice, or \code{NA} if not found.
 }
 \description{
 Looks up the label for a given choice name within a specific list
-in the Kobo choices sheet.
+in the XLSForm choices sheet.
 
 Looks up the label for a given choice name within a specific list
-in the Kobo choices sheet. Automatically looks up the choices sheet
+in the XLSForm choices sheet. Automatically looks up the choices sheet
 in the environment if not explicitly provided.
 }
 \keyword{internal}

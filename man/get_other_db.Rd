@@ -5,16 +5,16 @@
 \title{Get Other DB}
 \usage{
 get_other_db(
-  kobo_survey,
-  kobo_choices,
+  tool_survey,
+  tool_choices,
   other_labels,
   preferred_language = NULL
 )
 }
 \arguments{
-\item{kobo_survey}{A dataframe representing the Kobo survey.}
+\item{tool_survey}{A dataframe representing the XLSForm survey sheet.}
 
-\item{kobo_choices}{A dataframe representing the Kobo choices.}
+\item{tool_choices}{A dataframe representing the XLSForm choices sheet.}
 
 \item{other_labels}{A dataframe retrieved from \code{get_other_labels}.}
 

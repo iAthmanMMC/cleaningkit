@@ -7,7 +7,7 @@
 prepare_other_responses(
   raw_data,
   other_db,
-  kobo_choices,
+  tool_choices,
   raw_loops = NULL,
   extra_columns = NULL,
   uuid_column = "_uuid",
@@ -23,7 +23,7 @@ prepare_other_responses(
 
 \item{other_db}{Dataframe from \code{get_other_db()} with question metadata.}
 
-\item{kobo_choices}{Dataframe of Kobo choices sheet.}
+\item{tool_choices}{Dataframe of XLSForm choices sheet.}
 
 \item{raw_loops}{Optional list of loop/roster dataframes (default is NULL).
 Pass as a named or unnamed list, e.g.,
@@ -49,7 +49,7 @@ one spurious "other" response (label text, bogus uuid) per question.}
 
 \item{label_language_fallback}{Logical. If \code{TRUE} (the default), when the
 English label lookup for a selected \code{select_multiple} code returns
-nothing, the first non-empty label column in \code{kobo_choices} (e.g. an
+nothing, the first non-empty label column in \code{tool_choices} (e.g. an
 Arabic \code{label::Arabic (ar)} column) is used instead, so responses in
 other languages are shown as they appear in the raw data rather than as
 \code{NA}.}

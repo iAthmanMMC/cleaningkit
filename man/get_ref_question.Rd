@@ -9,7 +9,7 @@ get_ref_question(x)
 get_ref_question(x)
 }
 \arguments{
-\item{x}{A character vector containing Kobo relevance expressions.}
+\item{x}{A character vector containing relevance expressions.}
 }
 \value{
 The extracted question name, or \code{NA} if not found.
@@ -17,10 +17,10 @@ The extracted question name, or \code{NA} if not found.
 A character vector of the extracted question names, or \code{NA} if not found.
 }
 \description{
-Parses a Kobo relevance expression string to extract the referenced
+Parses a relevance expression string to extract the referenced
 question name enclosed in curly braces (e.g., \code{${question_name}}).
 
-Parses a Kobo relevance expression string to extract the referenced
+Parses a relevance expression string to extract the referenced
 question name enclosed in curly braces (e.g., \code{${question_name}}).
 This function is fully vectorized.
 }

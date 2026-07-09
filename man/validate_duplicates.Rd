@@ -6,7 +6,7 @@
 \usage{
 validate_duplicates(
   dataset,
-  kobo_survey,
+  tool_survey,
   uuid_column = "_uuid",
   enumerator_column = "username",
   idnk_value = "Don't know",
@@ -21,7 +21,7 @@ validate_duplicates(
 \item{dataset}{A dataframe or a list containing a dataframe named
 \code{checked_dataset}.}
 
-\item{kobo_survey}{Kobo survey sheet dataframe. Must contain at least
+\item{tool_survey}{XLSForm survey sheet dataframe. Must contain at least
 \code{name} and \code{type} columns.}
 
 \item{uuid_column}{Name of the unique-identifier column. Default \code{"_uuid"}.}
