@@ -9,7 +9,7 @@ validate_duplicates(
   kobo_survey,
   uuid_column = "_uuid",
   enumerator_column = "username",
-  idnk_value = "idnk",
+  idnk_value = "Don't know",
   sm_separator = "/",
   log_name = "soft_duplicate_log",
   threshold = 7,
