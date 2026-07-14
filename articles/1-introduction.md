@@ -1,0 +1,52 @@
+# 1. Introduction
+
+``` r
+
+library(cleaningkit)
+```
+
+## Overview
+
+The `cleaningkit` package is built to automate the process of survey
+data cleaning and validation. The workflow of this package is divided
+into two primary phases:
+
+1.  **The Validation and Cleaning Process**
+2.  **Applying the Cleaning Logs to Produce the Final Output**
+
+### 1. The Validation and Cleaning Process
+
+This initial phase involves running a suite of validation functions (all
+starting with `validate_`). Each of these functions performs a specific
+check on your dataset and generates a corresponding log of flagged
+issues.
+
+After running the individual checks, you will combine all the generated
+logs into a single, comprehensive cleaning log that also includes a
+dataset to facilitate the review process. Concurrently, you will
+extract, prepare, and create a specialized cleaning log for handling
+“other” text responses.
+
+For detailed instructions and examples on running these functions,
+please see the [Validation and Cleaning
+Process](2-validation-and-cleaning.md) article.
+
+### 2. Applying the Cleaning Logs
+
+Once the cleaning logs (including the “other” text responses log) have
+been manually reviewed and filled out, you proceed to the application
+phase.
+
+This phase involves:
+
+- Reading the reviewed cleaning logs back into R.
+- Evaluating the logs to ensure they match the raw data correctly.
+- Applying the specified cleaning actions to the dataset.
+- Reviewing the cleaned data to verify that all the required cleaning
+  steps have been successfully implemented.
+- Creating a final consolidated output workbook. This final output
+  contains the README, the raw data, the newly cleaned data, and the
+  applied cleaning logs all in one place.
+
+For more details on this step, please see the [Applying Cleaning
+Logs](3-applying-cleaning-logs.md) article.

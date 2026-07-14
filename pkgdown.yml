@@ -2,5 +2,7 @@ pandoc: 3.8.3
 pkgdown: 2.2.1
 pkgdown_sha: ~
 articles:
-  introduction: introduction.html
-last_built: 2026-07-14T13:15Z
+  1-introduction: 1-introduction.html
+  2-validation-and-cleaning: 2-validation-and-cleaning.html
+  3-applying-cleaning-logs: 3-applying-cleaning-logs.html
+last_built: 2026-07-14T13:43Z
