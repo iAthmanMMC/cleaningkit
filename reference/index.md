@@ -69,5 +69,7 @@
   Interview Time
 - [`validate_logical_with_list()`](validate_logical_with_list.md) :
   Validate Multiple Logical Checks from a Checklist
+- [`validate_outliers()`](validate_outliers.md) : Validate Outliers in
+  Integer and Numeric Columns
 - [`validate_refused()`](validate_refused.md) : Validate Refused
   Responses
